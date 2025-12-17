@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:global_currency_converter_and_tracker/tracker_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 
 import 'currency_names.dart';
 import 'widgets/dropdown_currecy.dart';
+import 'onlineCheck.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,37 +35,41 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Load the list of currencies (and an initial rate) when the widget is created.
+    // This populates the dropdowns and sets `isOnline` depending on the network.
     _getCurrencies();
   }
 
   // Fetch currencies
   Future<void> _getCurrencies() async {
-    try {
-      var response = await http
-          .get(Uri.parse('https://api.exchangerate-api.com/v4/latest/USD'));
-      if (response.statusCode == 200) {
-        if (!isOnline) setState(() => isOnline = true);
-        var data = jsonDecode(response.body);
+    final online = await Onlinecheck.isOnline();
+    if (!mounted) return;
 
-        setState(() {
-          currencies = (data['rates'] as Map<String, dynamic>).keys.toList();
-          var raw = data['rates'][toCurrency];
-          rate = raw is num ? raw.toDouble() : 1.0;
-        });
-      } else {
-        if (isOnline) setState(() => isOnline = false);
-        setState(() {
-          if (currencies.isEmpty) currencies = [fromCurrency, toCurrency];
-          if (rate == 0.0) rate = 1.0;
-        });
-      }
-    } catch (e) {
-      if (isOnline) setState(() => isOnline = false);
+    setState(() => isOnline = online);
+
+    if (!online) {
       setState(() {
         if (currencies.isEmpty) currencies = [fromCurrency, toCurrency];
         if (rate == 0.0) rate = 1.0;
       });
-      print("Failed to fetch currencies: $e");
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.exchangerate-api.com/v4/latest/PHP'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        setState(() {
+          currencies = (data['rates'] as Map<String, dynamic>).keys.toList();
+          rate = (data['rates'][toCurrency] as num?)?.toDouble() ?? 1.0;
+        });
+      }
+    } catch (e) {
+      setState(() => isOnline = false);
     }
   }
 
@@ -73,10 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
       var response = await http.get(Uri.parse(
           'https://api.exchangerate-api.com/v4/latest/$fromCurrency'));
       if (response.statusCode == 200) {
+        // Got a fresh rates payload for the selected `fromCurrency`.
         if (!isOnline) setState(() => isOnline = true);
         var data = jsonDecode(response.body);
 
         setState(() {
+          // Update `rate` for conversion and recompute `total` if user entered amount.
           var raw = data['rates'][toCurrency];
           rate = raw is num ? raw.toDouble() : 1.0;
           if (amountController.text.isNotEmpty) {
@@ -84,6 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
       } else {
+        // HTTP error while fetching rate: keep offline indicator and fallback rate.
         if (isOnline) setState(() => isOnline = false);
         setState(() {
           if (rate == 0.0) rate = 1.0;
@@ -93,6 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
+      // On exception (network/parsing), mark offline and keep using fallback rate.
       if (isOnline) setState(() => isOnline = false);
       setState(() {
         if (rate == 0.0) rate = 1.0;
@@ -107,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Swap currencies
   void _swapCurrencies() {
     setState(() {
+      // Swap the two selected currency codes and refresh the exchange rate.
       String temp = fromCurrency;
       fromCurrency = toCurrency;
       toCurrency = temp;
@@ -185,6 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         const BorderSide(color: Colors.white),
                                   ),
                                 ),
+                                // Recompute `total` live as the user types an amount.
                                 onChanged: (value) {
                                   if (value.isNotEmpty) {
                                     setState(() {
@@ -201,6 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       // From Currency Dropdown
                       DropdownButtonHideUnderline(
                         child: CurrencyDropdown(
+                          // Select the source currency; changing it triggers a new rate fetch.
                           value: fromCurrency,
                           currencies: currencies,
                           currencyNames: currencyNames,
@@ -214,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Swap Button
+                      // Swap Button - swaps `from` and `to` and refreshes rate
                       IconButton(
                         onPressed: _swapCurrencies,
                         icon: const Icon(Icons.swap_vert,
@@ -222,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // To Currency Dropdown
+                      // To Currency Dropdown - select the target currency
                       CurrencyDropdown(
                         value: toCurrency,
                         currencies: currencies,
@@ -273,6 +286,27 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 20),
                     ],
                   ),
+                ),
+              ),
+            ),
+
+            // Button for next page
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CurrencyTracker()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 50, 50, 50),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  "Global Rates Tracker",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),

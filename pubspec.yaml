@@ -36,7 +36,14 @@ dependencies:
   sqflite: ^2.3.0
   path_provider: ^2.1.5
   http: ^1.2.1
-  shared_preferences: ^2.1.2
+
+  # Path package used by lib/database.dart for join()
+  path: ^1.9.0
+
+  # Note: `lib/database.dart` imports `package:path/path.dart`.
+  # If you get an analyzer warning about `package:path` not being a dependency,
+  # add the `path` package here, e.g.:
+  # path: ^1.9.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

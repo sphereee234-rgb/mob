@@ -1,3 +1,21 @@
+/// Currency Name Mappings
+///
+/// This file contains a comprehensive map of currency codes to their full names.
+/// It supports 164+ currencies from around the world, enabling the app to display
+/// human-readable currency names in dropdowns and UI elements.
+///
+/// Format: 3-letter ISO 4217 currency code -> Full currency name
+/// Example: "USD" -> "United States Dollar", "EUR" -> "Euro"
+///
+/// This mapping is used by:
+/// - CurrencyDropdown widget to display currency options
+/// - HomeScreen to show selected currencies
+/// - Database for storing currency identifiers
+///
+/// To add a new currency, simply add a new key-value pair to the map below
+/// in alphabetical order by currency code.
+library;
+
 Map<String, String> currencyNames = {
   "AED": "United Arab Emirates Dirham",
   "AFN": "Afghan Afghani",

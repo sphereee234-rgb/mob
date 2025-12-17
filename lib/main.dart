@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 
+// File: main.dart
+// Purpose: Application entry point. Launches the `HomeScreen` wrapped in
+// a minimal `MaterialApp`.
 void main() {
   runApp(MyApp());
 }
@@ -12,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: "Global Currency Converter ",
+      title: "Currecy Converter",
       home: HomeScreen(),
     );
   }
